@@ -11,24 +11,29 @@ import socket
 import subprocess
 import platform
 import logging
+import os
 from datetime import datetime
 from dataclasses import dataclass, field
 from typing import Optional
 from enum import Enum
+from dotenv import load_dotenv
+
+# Carica variabili da .env
+load_dotenv()
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # CONFIGURAZIONE
 # ═══════════════════════════════════════════════════════════════════════════════
 
 CONFIG = {
-    # 🤖 Telegram Bot
-    "TELEGRAM_BOT_TOKEN": "7851447275:AAE5-p2eaDCZSTvuNFKawgAml7ivZ8xPevI",
-    "TELEGRAM_CHAT_ID": "226914246",
+    # 🤖 Telegram Bot (da .env)
+    "TELEGRAM_BOT_TOKEN": os.getenv("TELEGRAM_BOT_TOKEN"),
+    "TELEGRAM_CHAT_ID": os.getenv("TELEGRAM_CHAT_ID"),
 
     # ⏱️ Timing
-    "CHECK_INTERVAL": 30,           # Controlla ogni 30 secondi
-    "RETRY_INTERVAL": 10,           # Riprova dopo 10 sec se errore
-    "TIMEOUT": 10,                  # Timeout connessioni
+    "CHECK_INTERVAL": int(os.getenv("CHECK_INTERVAL", 30)),
+    "RETRY_INTERVAL": int(os.getenv("RETRY_INTERVAL", 10)),
+    "TIMEOUT": int(os.getenv("TIMEOUT", 10)),
 
     # 📊 Alert
     "ALERT_ON_RECOVERY": True,      # Notifica quando torna online
