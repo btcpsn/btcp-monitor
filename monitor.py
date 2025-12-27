@@ -39,6 +39,9 @@ CONFIG = {
     "ALERT_ON_RECOVERY": True,      # Notifica quando torna online
     "CONSECUTIVE_FAILURES": 2,      # Alert dopo 2 fallimenti consecutivi
     "LOG_FILE": "btcp_monitor.log",
+
+    # 🔄 GitHub Actions mode (single run)
+    "RUN_ONCE": os.getenv("RUN_ONCE", "false").lower() == "true",
 }
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -424,6 +427,20 @@ class SystemMonitor:
         logger.info("🚀 BTCP MONITOR STARTED")
         logger.info("=" * 60)
 
+        # GitHub Actions mode: run once and exit
+        if CONFIG["RUN_ONCE"]:
+            logger.info("🔄 Running in single-check mode (GitHub Actions)")
+            await self.run_checks()
+
+            # Report only if there are DOWN services
+            down_services = [t for t in self.targets if t.status == Status.DOWN]
+            if down_services:
+                await self.notifier.send_status_report(self.targets)
+
+            logger.info("✅ Single check completed")
+            return
+
+        # Normal mode: continuous monitoring
         await self.notifier.send_message(
             "🚀 <b>BTCP Monitor Avviato</b>\n\n"
             f"📋 Target monitorati: <b>{len(self.targets)}</b>\n"
@@ -501,8 +518,14 @@ async def main():
     """)
 
     monitor = SystemMonitor()
-    command_handler = TelegramCommandHandler(monitor)
 
+    # GitHub Actions mode: just run checks once
+    if CONFIG["RUN_ONCE"]:
+        await monitor.start()
+        return
+
+    # Normal mode: run monitor + command handler
+    command_handler = TelegramCommandHandler(monitor)
     await asyncio.gather(
         monitor.start(),
         command_handler.listen()
