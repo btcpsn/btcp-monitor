@@ -225,7 +225,8 @@ class TelegramNotifier:
         for target in sorted(targets, key=lambda x: (x.status != Status.DOWN, x.name)):
             status_emoji = target.status.value
             if target.status == Status.DOWN and target.error_message:
-                message += f"{status_emoji} {target.name}\n   ❗ <code>{target.error_message}</code>\n"
+                message += f"{status_emoji} <b>{target.name}</b>\n"
+                message += f"    └─ ⚠️ <i>{target.error_message}</i>\n"
             else:
                 message += f"{status_emoji} {target.name}\n"
 
@@ -295,11 +296,11 @@ class SystemMonitor:
 
             if result.returncode == 0:
                 return True, elapsed, ""
-            return False, 0, "Host unreachable"
+            return False, 0, f"Host {host} non raggiungibile"
         except asyncio.TimeoutError:
-            return False, 0, "Ping timeout"
+            return False, 0, f"Timeout ping verso {host}"
         except Exception as e:
-            return False, 0, str(e)
+            return False, 0, f"{host}: {e}"
 
     async def check_tcp_port(self, host: str, port: int) -> tuple[bool, float, str]:
         try:
@@ -311,11 +312,13 @@ class SystemMonitor:
             await writer.wait_closed()
             return True, elapsed, ""
         except asyncio.TimeoutError:
-            return False, 0, f"Timeout porta {port}"
+            return False, 0, f"Timeout connessione {host}:{port}"
         except ConnectionRefusedError:
-            return False, 0, f"Connessione rifiutata porta {port}"
+            return False, 0, f"Connessione rifiutata {host}:{port}"
+        except OSError as e:
+            return False, 0, f"Errore rete {host}:{port} - {e.strerror}"
         except Exception as e:
-            return False, 0, str(e)
+            return False, 0, f"{host}:{port} - {e}"
 
     async def check_http(self, url: str, expected_status: int = 200) -> tuple[bool, float, str]:
         try:
@@ -326,13 +329,31 @@ class SystemMonitor:
                     elapsed = (datetime.now() - start).total_seconds() * 1000
                     if resp.status == expected_status:
                         return True, elapsed, ""
-                    return False, elapsed, f"HTTP {resp.status}"
+                    # Descrizioni errori HTTP comuni
+                    http_errors = {
+                        400: "Bad Request",
+                        401: "Non autorizzato",
+                        403: "Accesso negato",
+                        404: "Pagina non trovata",
+                        500: "Errore interno server",
+                        502: "Bad Gateway",
+                        503: "Servizio non disponibile",
+                        504: "Gateway Timeout",
+                    }
+                    desc = http_errors.get(resp.status, "")
+                    if desc:
+                        return False, elapsed, f"HTTP {resp.status} ({desc})"
+                    return False, elapsed, f"HTTP {resp.status} (atteso {expected_status})"
         except asyncio.TimeoutError:
-            return False, 0, "HTTP timeout"
+            return False, 0, f"Timeout HTTP - nessuna risposta"
+        except aiohttp.ClientConnectorError as e:
+            return False, 0, f"Impossibile connettersi - {e.os_error.strerror if e.os_error else 'connessione fallita'}"
+        except aiohttp.ClientSSLError:
+            return False, 0, "Errore certificato SSL"
         except aiohttp.ClientError as e:
-            return False, 0, f"HTTP error: {type(e).__name__}"
+            return False, 0, f"Errore HTTP: {type(e).__name__}"
         except Exception as e:
-            return False, 0, str(e)
+            return False, 0, f"Errore: {e}"
 
     async def check_docker(self, container: str) -> tuple[bool, float, str]:
         try:
