@@ -57,10 +57,26 @@ SERVERS = [
 
 # 🌐 Servizi Web (HTTP/HTTPS)
 WEBSITES = [
-    {"name": "BTCPay PROD Web", "url": "https://51.75.90.145", "expected_status": 200},
-    {"name": "Bitmoon API PROD", "url": "https://54.36.114.17", "expected_status": 200},
-    {"name": "BTCPay STAGING Web", "url": "https://54.36.119.150", "expected_status": 200},
-    {"name": "Bitmoon API STAGING", "url": "https://57.129.91.206", "expected_status": 200},
+    # BitcoinPeople
+    {"name": "BitcoinPeople Main", "url": "https://bitcoinpeople.it", "expected_status": 200},
+    {"name": "BitcoinPeople Pay", "url": "https://pay.bitcoinpeople.it", "expected_status": 200},
+    {"name": "BitcoinPeople API", "url": "https://api.bitcoinpeople.it", "expected_status": 200},
+
+    # BPay
+    {"name": "BPay Main", "url": "https://bpay.it", "expected_status": 200},
+    {"name": "BPay Pay", "url": "https://pay.bpay.it", "expected_status": 200},
+
+    # Bitmoon
+    {"name": "Bitmoon Main", "url": "https://bitmoon.it", "expected_status": 200},
+    {"name": "Bitmoon API", "url": "https://api.bitmoon.it", "expected_status": 200},
+    {"name": "Bitmoon App", "url": "https://app.bitmoon.it", "expected_status": 200},
+
+    # Bagheera
+    {"name": "Bagheera Main", "url": "https://bagheera.it", "expected_status": 200},
+
+    # Direct IP checks (backup)
+    {"name": "BTCPay PROD (IP)", "url": "https://51.75.90.145", "expected_status": 200},
+    {"name": "Bitmoon API PROD (IP)", "url": "https://54.36.114.17", "expected_status": 200},
 ]
 
 # 🔌 Porte TCP da controllare
