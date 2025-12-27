@@ -39,6 +39,9 @@ CONFIG = {
     "ALERT_ON_RECOVERY": True,      # Notifica quando torna online
     "CONSECUTIVE_FAILURES": 2,      # Alert dopo 2 fallimenti consecutivi
     "LOG_FILE": "btcp_monitor.log",
+
+    # 🔄 GitHub Actions mode (single run)
+    "RUN_ONCE": os.getenv("RUN_ONCE", "false").lower() == "true",
 }
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -57,10 +60,26 @@ SERVERS = [
 
 # 🌐 Servizi Web (HTTP/HTTPS)
 WEBSITES = [
-    {"name": "BTCPay PROD Web", "url": "https://51.75.90.145", "expected_status": 200},
-    {"name": "Bitmoon API PROD", "url": "https://54.36.114.17", "expected_status": 200},
-    {"name": "BTCPay STAGING Web", "url": "https://54.36.119.150", "expected_status": 200},
-    {"name": "Bitmoon API STAGING", "url": "https://57.129.91.206", "expected_status": 200},
+    # BitcoinPeople
+    {"name": "BitcoinPeople Main", "url": "https://bitcoinpeople.it", "expected_status": 200},
+    {"name": "BitcoinPeople Pay", "url": "https://pay.bitcoinpeople.it", "expected_status": 200},
+    {"name": "BitcoinPeople API", "url": "https://api.bitcoinpeople.it", "expected_status": 200},
+
+    # BPay
+    {"name": "BPay Main", "url": "https://bpay.it", "expected_status": 200},
+    {"name": "BPay Pay", "url": "https://pay.bpay.it", "expected_status": 200},
+
+    # Bitmoon
+    {"name": "Bitmoon Main", "url": "https://bitmoon.it", "expected_status": 200},
+    {"name": "Bitmoon API", "url": "https://api.bitmoon.it", "expected_status": 200},
+    {"name": "Bitmoon App", "url": "https://app.bitmoon.it", "expected_status": 200},
+
+    # Bagheera
+    {"name": "Bagheera Main", "url": "https://bagheera.it", "expected_status": 200},
+
+    # Direct IP checks (backup)
+    {"name": "BTCPay PROD (IP)", "url": "https://51.75.90.145", "expected_status": 200},
+    {"name": "Bitmoon API PROD (IP)", "url": "https://54.36.114.17", "expected_status": 200},
 ]
 
 # 🔌 Porte TCP da controllare
@@ -408,6 +427,20 @@ class SystemMonitor:
         logger.info("🚀 BTCP MONITOR STARTED")
         logger.info("=" * 60)
 
+        # GitHub Actions mode: run once and exit
+        if CONFIG["RUN_ONCE"]:
+            logger.info("🔄 Running in single-check mode (GitHub Actions)")
+            await self.run_checks()
+
+            # Report only if there are DOWN services
+            down_services = [t for t in self.targets if t.status == Status.DOWN]
+            if down_services:
+                await self.notifier.send_status_report(self.targets)
+
+            logger.info("✅ Single check completed")
+            return
+
+        # Normal mode: continuous monitoring
         await self.notifier.send_message(
             "🚀 <b>BTCP Monitor Avviato</b>\n\n"
             f"📋 Target monitorati: <b>{len(self.targets)}</b>\n"
@@ -485,8 +518,14 @@ async def main():
     """)
 
     monitor = SystemMonitor()
-    command_handler = TelegramCommandHandler(monitor)
 
+    # GitHub Actions mode: just run checks once
+    if CONFIG["RUN_ONCE"]:
+        await monitor.start()
+        return
+
+    # Normal mode: run monitor + command handler
+    command_handler = TelegramCommandHandler(monitor)
     await asyncio.gather(
         monitor.start(),
         command_handler.listen()
