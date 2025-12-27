@@ -224,7 +224,10 @@ class TelegramNotifier:
         # Prima i DOWN, poi gli UP
         for target in sorted(targets, key=lambda x: (x.status != Status.DOWN, x.name)):
             status_emoji = target.status.value
-            message += f"{status_emoji} {target.name}\n"
+            if target.status == Status.DOWN and target.error_message:
+                message += f"{status_emoji} {target.name}\n   ❗ <code>{target.error_message}</code>\n"
+            else:
+                message += f"{status_emoji} {target.name}\n"
 
         await self.send_message(message)
 
