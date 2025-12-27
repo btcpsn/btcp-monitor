@@ -63,19 +63,11 @@ WEBSITES = [
     # BitcoinPeople
     {"name": "BitcoinPeople Main", "url": "https://bitcoinpeople.it", "expected_status": 200},
     {"name": "BitcoinPeople Pay", "url": "https://pay.bitcoinpeople.it", "expected_status": 200},
-    {"name": "BitcoinPeople API", "url": "https://api.bitcoinpeople.it", "expected_status": 200},
-
-    # BPay
-    {"name": "BPay Main", "url": "https://bpay.it", "expected_status": 200},
-    {"name": "BPay Pay", "url": "https://pay.bpay.it", "expected_status": 200},
+    {"name": "BPay", "url": "https://bpay.bitcoinpeople.it", "expected_status": 200},
+    {"name": "Bagheera", "url": "https://bagheera.bitcoinpeople.it", "expected_status": 200},
 
     # Bitmoon
     {"name": "Bitmoon Main", "url": "https://bitmoon.it", "expected_status": 200},
-    {"name": "Bitmoon API", "url": "https://api.bitmoon.it", "expected_status": 200},
-    {"name": "Bitmoon App", "url": "https://app.bitmoon.it", "expected_status": 200},
-
-    # Bagheera
-    {"name": "Bagheera Main", "url": "https://bagheera.it", "expected_status": 200},
 
     # Direct IP checks (backup)
     {"name": "BTCPay PROD (IP)", "url": "https://51.75.90.145", "expected_status": 200},
@@ -232,7 +224,10 @@ class TelegramNotifier:
         # Prima i DOWN, poi gli UP
         for target in sorted(targets, key=lambda x: (x.status != Status.DOWN, x.name)):
             status_emoji = target.status.value
-            message += f"{status_emoji} {target.name}\n"
+            if target.status == Status.DOWN and target.error_message:
+                message += f"{status_emoji} {target.name}\n   ❗ <code>{target.error_message}</code>\n"
+            else:
+                message += f"{status_emoji} {target.name}\n"
 
         await self.send_message(message)
 
